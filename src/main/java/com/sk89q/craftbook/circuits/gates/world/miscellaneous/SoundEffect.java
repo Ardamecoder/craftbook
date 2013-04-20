@@ -11,6 +11,7 @@ import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
+import com.sk89q.craftbook.circuits.ic.ICVerificationException;
 import com.sk89q.craftbook.circuits.ic.RestrictedIC;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
@@ -36,13 +37,22 @@ public class SoundEffect extends AbstractIC {
             volume = 100;
         }
         try {
-            pitch = (byte) (Integer.parseInt(split[1]) / 1.5873015873015873015873015873016);
+            pitch = Byte.parseByte(split[1]);
         } catch (Exception e) {
             pitch = 0;
         }
 
         String soundName = getSign().getLine(3).trim();
         sound = Sound.valueOf(soundName);
+        if(sound == null) {
+            for(Sound sound : Sound.values()) {
+
+                if(soundName.trim().length() > 14 && sound.name().length() > 15 && sound.name().startsWith(soundName)) {
+                    this.sound = sound;
+                    break;
+                }
+            }
+        }
     }
 
     @Override
@@ -60,18 +70,14 @@ public class SoundEffect extends AbstractIC {
     @Override
     public void trigger(ChipState chip) {
 
-        if (chip.getInput(0)) {
+        if (chip.getInput(0))
             doSound();
-        }
     }
 
     public void doSound() {
 
-        try {
-            Block b = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
-            b.getWorld().playSound(b.getLocation(), sound, volume, pitch);
-        } catch (Exception ignored) {
-        }
+        Block b = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
+        b.getWorld().playSound(b.getLocation(), sound, volume, pitch);
     }
 
     public static class Factory extends AbstractICFactory implements RestrictedIC {
@@ -98,6 +104,28 @@ public class SoundEffect extends AbstractIC {
 
             String[] lines = new String[] {"volume:pitch", "sound name"};
             return lines;
+        }
+
+        @Override
+        public void verify(ChangedSign sign) throws ICVerificationException {
+
+            try {
+                Sound sound = Sound.valueOf(sign.getLine(3).trim());
+                if(sound == null) {
+                    for(Sound s : Sound.values()) {
+
+                        if(sign.getLine(3).trim().length() > 14 && s.name().length() > 15 && s.name().startsWith(sign.getLine(3).trim())) {
+                            sound = s;
+                            break;
+                        }
+                    }
+                }
+                if(sound == null)
+                    throw new ICVerificationException("Unknown Sound!");
+            }
+            catch(Exception e) {
+                throw new ICVerificationException("Unknown Sound!");
+            }
         }
     }
 }

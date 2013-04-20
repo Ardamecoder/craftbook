@@ -2,8 +2,10 @@ package com.sk89q.craftbook.cart;
 
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Minecart;
-import org.bukkit.entity.PoweredMinecart;
-import org.bukkit.entity.StorageMinecart;
+import org.bukkit.entity.minecart.ExplosiveMinecart;
+import org.bukkit.entity.minecart.HopperMinecart;
+import org.bukkit.entity.minecart.PoweredMinecart;
+import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -51,17 +53,17 @@ public class CartDispenser extends CartMechanism {
         // detect intentions
         Power pow = isActive(blocks.rail, blocks.base, blocks.sign);
         boolean inf = "inf".equalsIgnoreCase(blocks.getSign().getLine(2));
-        for (Chest c : RailUtil.getNearbyChests(blocks.base)) {
-            Inventory inv = inf ? null : c.getInventory();
 
-            CartType type = CartType.fromString(blocks.getSign().getLine(3));
+        if(inf) {
+
+            CartType type = CartType.fromString(blocks.getSign().getLine(0));
 
             // go
             if (cart == null) {
                 switch (pow) {
                     case ON:
                         if(!((org.bukkit.block.Sign) blocks.sign.getState()).getLine(3).toLowerCase().contains("collect"))
-                            dispense(blocks, inv, type);
+                            dispense(blocks, null, type);
                         return;
                     case OFF: // power going off doesn't eat a cart unless the cart moves.
                     case NA:
@@ -73,8 +75,36 @@ public class CartDispenser extends CartMechanism {
                     case OFF:
                     case NA:
                         if(!((org.bukkit.block.Sign) blocks.sign.getState()).getLine(3).toLowerCase().contains("dispense"))
-                            collect(cart, inv);
+                            collect(cart, null);
                         return;
+                }
+            }
+        } else {
+            for (Chest c : RailUtil.getNearbyChests(blocks.base)) {
+                Inventory inv = c.getInventory();
+
+                CartType type = CartType.fromString(blocks.getSign().getLine(0));
+
+                // go
+                if (cart == null) {
+                    switch (pow) {
+                        case ON:
+                            if(!((org.bukkit.block.Sign) blocks.sign.getState()).getLine(3).toLowerCase().contains("collect"))
+                                dispense(blocks, inv, type);
+                            return;
+                        case OFF: // power going off doesn't eat a cart unless the cart moves.
+                        case NA:
+                    }
+                } else {
+                    switch (pow) {
+                        case ON: // there's already a cart moving on the dispenser so don't spam.
+                            return;
+                        case OFF:
+                        case NA:
+                            if(!((org.bukkit.block.Sign) blocks.sign.getState()).getLine(3).toLowerCase().contains("dispense"))
+                                collect(cart, inv);
+                            return;
+                    }
                 }
             }
         }
@@ -96,6 +126,10 @@ public class CartDispenser extends CartMechanism {
                 cartType = ItemType.STORAGE_MINECART.getID();
             } else if (cart instanceof PoweredMinecart) {
                 cartType = ItemType.POWERED_MINECART.getID();
+            } else if (cart instanceof ExplosiveMinecart) {
+                cartType = ItemType.TNT_MINECART.getID();
+            } else if (cart instanceof HopperMinecart) {
+                cartType = ItemType.HOPPER_MINECART.getID();
             }
             inv.addItem(new ItemStack(cartType, 1));
         }
@@ -117,6 +151,12 @@ public class CartDispenser extends CartMechanism {
             } else if (type.equals(CartType.PoweredMinecart)) {
                 if (!inv.contains(ItemType.POWERED_MINECART.getID())) return;
                 inv.removeItem(new ItemStack(ItemType.POWERED_MINECART.getID(), 1));
+            } else if (type.equals(CartType.TNTMinecart)) {
+                if (!inv.contains(ItemType.TNT_MINECART.getID())) return;
+                inv.removeItem(new ItemStack(ItemType.TNT_MINECART.getID(), 1));
+            } else if (type.equals(CartType.HopperMinecart)) {
+                if (!inv.contains(ItemType.HOPPER_MINECART.getID())) return;
+                inv.removeItem(new ItemStack(ItemType.HOPPER_MINECART.getID(), 1));
             }
         }
         blocks.rail.getWorld().spawn(BukkitUtil.center(blocks.rail.getLocation()), type.toClass());
@@ -124,7 +164,7 @@ public class CartDispenser extends CartMechanism {
 
     public enum CartType {
         Minecart("Minecart", Minecart.class), StorageMinecart("Storage", StorageMinecart.class),
-        PoweredMinecart("Powered", PoweredMinecart.class);
+        PoweredMinecart("Powered", PoweredMinecart.class), TNTMinecart("TNT", ExplosiveMinecart.class), HopperMinecart("Hopper", org.bukkit.entity.minecart.HopperMinecart.class);
 
         private final Class<? extends Minecart> cl;
         private final String name;

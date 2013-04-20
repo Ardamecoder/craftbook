@@ -4,14 +4,15 @@ package com.sk89q.craftbook.util.config;
  * @author Turtle9598
  */
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
 import com.sk89q.craftbook.LocalConfiguration;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mech.CustomDropManager;
+import com.sk89q.craftbook.util.ICUtil.LocationCheckType;
 import com.sk89q.craftbook.util.ItemInfo;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.blocks.BlockID;
@@ -22,7 +23,7 @@ import com.sk89q.worldedit.blocks.ItemID;
  */
 public class YAMLConfiguration extends LocalConfiguration {
 
-    protected final YAMLProcessor config;
+    public final YAMLProcessor config;
     protected final Logger logger;
     private FileHandler logFileHandler;
 
@@ -42,7 +43,9 @@ public class YAMLConfiguration extends LocalConfiguration {
         ICCached = config.getBoolean("circuits.ics.cache", true);
         ICMaxRange = config.getInt("circuits.ics.max-radius", 15);
         ICShortHandEnabled = config.getBoolean("circuits.ics.allow-short-hand", true);
-        disabledICs = new HashSet<String>(config.getStringList("circuits.ics.disallowed-ics", Arrays.asList("")));
+        ICKeepLoaded = config.getBoolean("circuits.ics.keep-loaded", false);
+        disabledICs = config.getStringList("circuits.ics.disallowed-ics", new ArrayList<String>());
+        ICdefaultCoordinate = LocationCheckType.getTypeFromName(config.getString("circuits.ics.default-coordinate-system", "RELATIVE"));
 
         // Circuits Configuration Listener
         netherrackEnabled = config.getBoolean("circuits.wiring.netherrack-enabled", false);
@@ -55,6 +58,7 @@ public class YAMLConfiguration extends LocalConfiguration {
         pipesDiagonal = config.getBoolean("circuits.pipes.allow-diagonal", false);
         pipeInsulator = config.getInt("circuits.pipes.insulator-block", BlockID.CLOTH);
         pipeStackPerPull = config.getBoolean("circuits.pipes.stack-per-move", true);
+        pipeRequireSign = config.getBoolean("circuits.pipes.require-sign", false);
 
         /* Mechanism Configuration */
 
@@ -84,8 +88,13 @@ public class YAMLConfiguration extends LocalConfiguration {
         // Better Pistons Configuration Listener
         pistonsEnabled = config.getBoolean("mechanics.better-pistons.enable", true);
         pistonsCrusher = config.getBoolean("mechanics.better-pistons.crushers", true);
+        pistonsCrusherInstaKill = config.getBoolean("mechanics.better-pistons.crushers-kill-mobs", false);
+        pistonsCrusherBlacklist = config.getIntList("mechanics.better-pistons.crusher-blacklist", new ArrayList<Integer>());
         pistonsSuperSticky = config.getBoolean("mechanics.better-pistons.super-sticky", true);
         pistonsBounce = config.getBoolean("mechanics.better-pistons.bounce", true);
+        pistonsBounceBlacklist = config.getIntList("mechanics.better-pistons.bounce-blacklist", new ArrayList<Integer>());
+        pistonsSuperPush = config.getBoolean("mechanics.better-pistons.super-push", true);
+        pistonMaxDistance = config.getInt("mechanics.better-pistons.max-distance", 12);
 
         // Bookcase Configuration Listener
         bookcaseEnabled = config.getBoolean("mechanics.bookcase.enable", true);
@@ -108,7 +117,7 @@ public class YAMLConfiguration extends LocalConfiguration {
         chairSneak = config.getBoolean("mechanics.chair.require-sneak", true);
         chairHealth = config.getBoolean("mechanics.chair.regen-health", true);
         chairBlocks = config.getIntList("mechanics.chair.blocks", Arrays.asList(53, 67, 108, 109, 114, 128, 134, 135,
-                136));
+                136, 156));
 
         // Chunk Anchor Configuration Listener
         chunkAnchorEnabled = config.getBoolean("mechanics.chunk-anchor.enable", true);
@@ -123,6 +132,7 @@ public class YAMLConfiguration extends LocalConfiguration {
         cookingPotFuel = config.getBoolean("mechanics.cooking-pot.require-fuel", true);
         cookingPotOres = config.getBoolean("mechanics.cooking-pot.cook-ores", false);
         cookingPotSignOpen = config.getBoolean("mechanics.cooking-pot.sign-click-open", true);
+        cookingPotDestroyBuckets = config.getBoolean("mechanics.cooking-pot.take-buckets", false);
 
         // Custom Crafting Configuration Listener
         customCraftingEnabled = config.getBoolean("mechanics.custom-crafting.enable", true);
@@ -153,6 +163,7 @@ public class YAMLConfiguration extends LocalConfiguration {
         gateLimitColumns = config.getBoolean("mechanics.gate.limit-columns", true);
         gateColumnLimit = config.getInt("mechanics.gate.max-columns", 14);
         gateBlocks = config.getIntList("mechanics.gate.blocks", Arrays.asList(85, 101, 102, 113));
+        gateEnforceType = config.getBoolean("mechanics.gate.enforce-type", true);
 
         // Hidden Switch Configuration Listener
         hiddenSwitchEnabled = config.getBoolean("mechanics.hidden-switch.enable", true);
@@ -179,6 +190,10 @@ public class YAMLConfiguration extends LocalConfiguration {
 
         // Payment Configuration Listener
         paymentEnabled = config.getBoolean("mechanics.payment.enable", true);
+
+        // SignCopy Configuration Listener
+        signCopyEnabled = config.getBoolean("mechanics.sign-copy.enable", true);
+        signCopyItem = config.getInt("mechanics.sign-copy.item", ItemID.INK_SACK);
 
         // Snow Configuration Listener
         snowPiling = config.getBoolean("mechanics.snow.piling", false);

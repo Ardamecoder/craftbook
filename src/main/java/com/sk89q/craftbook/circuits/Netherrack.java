@@ -7,7 +7,7 @@
  * Software Foundation, either version 3 of the License, or (at your option) any later version.
  * 
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-  * warranty of MERCHANTABILITY or
+ * warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License along with this program. If not,
@@ -16,8 +16,10 @@
 
 package com.sk89q.craftbook.circuits;
 
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import com.sk89q.craftbook.AbstractMechanic;
@@ -70,9 +72,13 @@ public class Netherrack extends AbstractMechanic {
         Block above = event.getBlock().getRelative(0, 1, 0);
 
         if (event.getNewCurrent() > 0 && canReplaceWithFire(above.getTypeId())) {
-            above.setTypeId(BlockID.FIRE, false);
+            above.setTypeId(BlockID.FIRE);
+            for(Player p : Bukkit.getOnlinePlayers())
+                p.sendBlockChange(above.getLocation(), BlockID.FIRE, (byte) 0);
         } else if (event.getNewCurrent() < 1 && above != null && above.getTypeId() == BlockID.FIRE) {
-            above.setTypeId(BlockID.AIR, false);
+            above.setTypeId(BlockID.AIR);
+            for(Player p : Bukkit.getOnlinePlayers())
+                p.sendBlockChange(above.getLocation(), BlockID.AIR, (byte) 0);
         }
     }
 

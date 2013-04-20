@@ -34,12 +34,15 @@ import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.PigZombie;
 import org.bukkit.entity.Sheep;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Skeleton.SkeletonType;
 import org.bukkit.entity.Slime;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Tameable;
 import org.bukkit.entity.ThrownExpBottle;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.Wolf;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
 import com.sk89q.craftbook.ChangedSign;
@@ -55,6 +58,7 @@ import com.sk89q.craftbook.util.LocationUtil;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.blocks.BlockID;
+import com.sk89q.worldedit.blocks.ItemID;
 
 public class CreatureSpawner extends AbstractIC {
 
@@ -103,6 +107,9 @@ public class CreatureSpawner extends AbstractIC {
 
         Block center = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
 
+        if(!center.getChunk().isLoaded())
+            return;
+
         if (chip.getInput(0)) if (center.getRelative(0, 1, 0).getTypeId() == BlockID.MOB_SPAWNER) {
 
             org.bukkit.block.CreatureSpawner sp = (org.bukkit.block.CreatureSpawner) center.getRelative(0, 1,
@@ -114,6 +121,8 @@ public class CreatureSpawner extends AbstractIC {
             // spawn amount of mobs
             for (int i = 0; i < amount; i++) {
                 Entity entity = loc.getWorld().spawn(loc, type.getEntityClass());
+                if(entity instanceof Skeleton)
+                    ((Skeleton) entity).getEquipment().setItemInHand(new ItemStack(ItemID.BOW, 1));
                 setEntityData(entity, data);
             }
         }
@@ -210,6 +219,11 @@ public class CreatureSpawner extends AbstractIC {
                     ((Wolf) ent).setAngry(true);
                 } else if (data[0].equalsIgnoreCase("collar")) {
                     ((Wolf) ent).setCollarColor(DyeColor.valueOf(data[1]));
+                }
+                break;
+            case SKELETON:
+                if (data[0].equalsIgnoreCase("wither")) {
+                    ((Skeleton) ent).setSkeletonType(SkeletonType.WITHER);
                 }
                 break;
             case ENDERMAN:
@@ -347,7 +361,7 @@ public class CreatureSpawner extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"entitytype", "data*amount"};
+            String[] lines = new String[] {"entitytype", "+odata*amount"};
             return lines;
         }
 

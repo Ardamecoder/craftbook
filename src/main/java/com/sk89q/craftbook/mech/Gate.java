@@ -350,7 +350,7 @@ public class Gate extends AbstractMechanic {
         }
         if (sign == null) return;
 
-        if (plugin.getConfiguration().safeDestruction && getGateBlock() == player.getTypeInHand()) {
+        if (plugin.getConfiguration().safeDestruction && getGateBlock() == player.getHeldItemType() && isValidGateBlock(getGateBlock(), false)) {
 
             if (!player.hasPermission("craftbook.mech.gate.restock")) {
                 player.printError("mech.restock-permission");
@@ -401,7 +401,7 @@ public class Gate extends AbstractMechanic {
 
         if (event.getNewCurrent() == event.getOldCurrent()) return;
 
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+        plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
 
             @Override
             public void run() {
@@ -451,8 +451,7 @@ public class Gate extends AbstractMechanic {
                 String line0 = sign.getLine(0).trim();
                 if (line0 != null && !line0.isEmpty()) {
                     try {
-                        int iLine0 = Integer.parseInt(line0);
-                        if (iLine0 != 0 && !isValidGateBlock(iLine0)) {
+                        if (!isValidGateBlock(Integer.parseInt(line0))) {
                             throw new NumberFormatException();
                         }
                     } catch (NumberFormatException e) {
@@ -461,12 +460,10 @@ public class Gate extends AbstractMechanic {
                 } else {
                 }
                 sign.setLine(1, "[Gate]");
-                if (sign.getLine(3).equalsIgnoreCase("infinite") && !player.hasPermission("craftbook.mech.gate" + "" +
-                        ".infinite")) {
+                if (sign.getLine(3).equalsIgnoreCase("infinite") && !player.hasPermission("craftbook.mech.gate.infinite"))
                     sign.setLine(3, "0");
-                } else if (!sign.getLine(3).equalsIgnoreCase("infinite")) {
+                else if (!sign.getLine(3).equalsIgnoreCase("infinite"))
                     sign.setLine(3, "0");
-                }
                 sign.update(false);
                 player.print("mech.gate.create");
             } else if (sign.getLine(1).equalsIgnoreCase("[DGate]")) {
@@ -623,6 +620,8 @@ public class Gate extends AbstractMechanic {
 
     public int getGateBlock() {
 
+        int gateBlock = 0;
+
         if (!sign.getLine(0).isEmpty()) {
             try {
                 return Integer.parseInt(sign.getLine(0));
@@ -639,7 +638,7 @@ public class Gate extends AbstractMechanic {
                 for (int y1 = y - 2; y1 <= y + 1; y1++) {
                     for (int z1 = z - 1; z1 <= z + 1; z1++) {
                         if (getFirstBlock(new WorldVector(world, x1, y1, z1)) != 0) {
-                            return getFirstBlock(new WorldVector(world, x1, y1, z1));
+                            gateBlock = getFirstBlock(new WorldVector(world, x1, y1, z1));
                         }
                     }
                 }
@@ -649,13 +648,19 @@ public class Gate extends AbstractMechanic {
                 for (int y1 = y - 3; y1 <= y + 6; y1++) {
                     for (int z1 = z - 3; z1 <= z + 3; z1++) {
                         if (getFirstBlock(new WorldVector(world, x1, y1, z1)) != 0) {
-                            return getFirstBlock(new WorldVector(world, x1, y1, z1));
+                            gateBlock = getFirstBlock(new WorldVector(world, x1, y1, z1));
                         }
                     }
                 }
             }
         }
-        return 0;
+
+        if(plugin.getConfiguration().gateEnforceType && gateBlock != 0) {
+            sign.setLine(0, String.valueOf(gateBlock));
+            sign.update();
+        }
+
+        return gateBlock;
     }
 
     public int getFirstBlock(WorldVector pt) {

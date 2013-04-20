@@ -17,6 +17,13 @@ public class ItemUtil {
 
     }
 
+    /**
+     * Add an itemstack to an existing itemstack.
+     * 
+     * @param base The itemstack to be added to.
+     * @param toAdd The itemstack to add to the base.
+     * @return The unaddable items.
+     */
     public static ItemStack addToStack(ItemStack base, ItemStack toAdd) {
 
         if (!areItemsIdentical(base, toAdd)) return toAdd;
@@ -30,6 +37,54 @@ public class ItemUtil {
             base.setAmount(base.getAmount() + toAdd.getAmount());
             return null;
         }
+    }
+
+    /**
+     * Filter a list of items by inclusions and exclusions.
+     * 
+     * @param stacks The base list of items.
+     * @param include The list of items to include, skipped if empty.
+     * @param exclude The list of items to exclude, skipped if empty.
+     * @return The list of items that have been filtered.
+     */
+    public static List<ItemStack> filterItems(List<ItemStack> stacks, List<ItemStack> include, List<ItemStack> exclude) {
+
+        List<ItemStack> ret = new ArrayList<ItemStack>();
+
+        for(ItemStack item : stacks) {
+
+            checks: {
+            if(include.size() > 0) {
+                boolean passes = false;
+                for(ItemStack inc : include) {
+
+                    if(!ItemUtil.isStackValid(inc))
+                        continue;
+                    if(!areItemsIdentical(item, inc))
+                        passes = false;
+                    else {
+                        passes = true;
+                        break;
+                    }
+                }
+                if(!passes)
+                    break checks;
+            }
+            if(exclude.size() > 0) {
+                for(ItemStack inc : exclude) {
+
+                    if(!ItemUtil.isStackValid(inc))
+                        continue;
+                    if(areItemsIdentical(item, inc))
+                        break checks;
+                }
+            }
+
+            ret.add(item.clone());
+        }
+        }
+
+        return ret;
     }
 
     public static ItemStack[] removeNulls(ItemStack[] array) {
@@ -65,6 +120,11 @@ public class ItemUtil {
     public static boolean areItemsIdentical(ItemStack item, int type, byte data) {
 
         return areItemsIdentical(item, new MaterialData(type, data));
+    }
+
+    public static boolean areItemsIdentical(ItemStack item, int type, short data) {
+
+        return areItemsIdentical(item, new MaterialData(type, (byte) data));
     }
 
     public static boolean areItemsIdentical(ItemStack item, MaterialData data) {
@@ -115,7 +175,7 @@ public class ItemUtil {
 
     public static boolean isCookable(ItemStack item) {
 
-        return getCookedResult(item) != null;
+        return getCookedResult(item) != null && !item.getItemMeta().hasDisplayName();
     }
 
     public static ItemStack getCookedResult(ItemStack item) {
@@ -138,7 +198,7 @@ public class ItemUtil {
 
     public static boolean isSmeltable(ItemStack item) {
 
-        return getSmeletedResult(item) != null;
+        return getSmeletedResult(item) != null && !item.getItemMeta().hasDisplayName();
     }
 
     public static ItemStack getSmeletedResult(ItemStack item) {
@@ -164,6 +224,8 @@ public class ItemUtil {
                 return new ItemStack(BlockID.GLASS);
             case ItemID.CLAY_BALL:
                 return new ItemStack(ItemID.BRICK_BAR);
+            case BlockID.NETHERRACK:
+                return new ItemStack(ItemID.NETHER_BRICK);
             default:
                 return null;
         }

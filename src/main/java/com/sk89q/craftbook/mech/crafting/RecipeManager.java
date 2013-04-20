@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -49,7 +50,11 @@ public class RecipeManager extends LocalConfiguration {
         List<String> keys = config.getKeys("crafting-recipes");
         if (keys != null) {
             for (String key : keys) {
-                recipes.add(new Recipe(key, config));
+                try {
+                    recipes.add(new Recipe(key, config));
+                } catch (InvalidCraftingException e) {
+                    logger.warning(e.getMessage());
+                }
             }
         }
     }
@@ -67,29 +72,56 @@ public class RecipeManager extends LocalConfiguration {
         private RecipeType type;
         private Collection<CraftingItemStack> ingredients;
         private HashMap<CraftingItemStack, Character> items;
-        private Collection<CraftingItemStack> results;
+        private CraftingItemStack result;
         private List<String> shape;
 
-        private Recipe(String id, YAMLProcessor config) {
+        public boolean hasAdvancedData() {
+            for(CraftingItemStack stack : ingredients)
+                if(!stack.hasAdvancedData())
+                    return true;
+            for(CraftingItemStack stack : items.keySet())
+                if(!stack.hasAdvancedData())
+                    return true;
+            if(!result.hasAdvancedData())
+                return true;
 
-            this.id = id;
+            return !advancedData.isEmpty();
+        }
+
+        private Recipe(String id, YAMLProcessor config) throws InvalidCraftingException {
+
+            this.id = id; 
             this.config = config;
             ingredients = new ArrayList<CraftingItemStack>();
-            results = new ArrayList<CraftingItemStack>();
             items = new HashMap<CraftingItemStack, Character>();
             load();
         }
 
-        private void load() {
+        private void load() throws InvalidCraftingException {
 
             type = RecipeType.getTypeFromName(config.getString("crafting-recipes." + id + ".type"));
-            if (type != RecipeType.SHAPED2X2 && type != RecipeType.SHAPED3X3) {
+            if (type != RecipeType.SHAPED2X2 && type != RecipeType.SHAPED3X3 && type != RecipeType.SHAPED) {
                 ingredients = getItems("crafting-recipes." + id + ".ingredients");
             } else {
                 items = getHashItems("crafting-recipes." + id + ".ingredients");
                 shape = config.getStringList("crafting-recipes." + id + ".shape", Arrays.asList(""));
             }
-            results = getItems("crafting-recipes." + id + ".results");
+            Iterator<CraftingItemStack> iterator = getItems("crafting-recipes." + id + ".results").iterator();
+            if(iterator.hasNext())
+                result = iterator.next();
+            else
+                throw new InvalidCraftingException("Result is invalid in recipe: "+ id);
+
+            if(iterator.hasNext()) {
+                ArrayList<CraftingItemStack> extraResults = new ArrayList<CraftingItemStack>();
+                while(iterator.hasNext())
+                    extraResults.add(iterator.next());
+                addAdvancedData("extra-results", extraResults);
+            }
+
+            String permNode = config.getString("crafting-recipes." + id + ".permission-node", null);
+            if (permNode != null)
+                addAdvancedData("permission-node", permNode);
         }
 
         private HashMap<CraftingItemStack, Character> getHashItems(String path) {
@@ -132,6 +164,7 @@ public class RecipeManager extends LocalConfiguration {
                 for (Object oitem : config.getKeys(path)) {
                     String item = String.valueOf(oitem);
                     if (item == null || item.isEmpty()) continue;
+                    item = RegexUtil.PIPE_PATTERN.split(item)[0];
                     String[] split = RegexUtil.COLON_PATTERN.split(item);
                     Material material;
                     try {
@@ -148,6 +181,9 @@ public class RecipeManager extends LocalConfiguration {
                             itemStack.setData((short) 0);
                         }
                         itemStack.setAmount(config.getInt(path + "." + item, 1));
+                        if(RegexUtil.PIPE_PATTERN.split(String.valueOf(oitem)).length > 1) {
+                            itemStack.addAdvancedData("name", RegexUtil.PIPE_PATTERN.split(String.valueOf(oitem))[1]);
+                        }
                         items.add(itemStack);
                     }
                 }
@@ -185,15 +221,11 @@ public class RecipeManager extends LocalConfiguration {
 
         public CraftingItemStack getResult() {
 
-            try {
-                return results.iterator().next();
-            } catch (Exception e) {
-                return null;
-            }
+            return result;
         }
 
         public enum RecipeType {
-            SHAPELESS("Shapeless"), SHAPED3X3("Shaped3x3"), SHAPED2X2("Shaped2x2"), FURNACE("Furnace");
+            SHAPELESS("Shapeless"), SHAPED3X3("Shaped3x3"), SHAPED2X2("Shaped2x2"), FURNACE("Furnace"), SHAPED("Shaped");
 
             private String name;
 
@@ -212,6 +244,22 @@ public class RecipeManager extends LocalConfiguration {
                 for (RecipeType t : RecipeType.values()) { if (t.getName().equalsIgnoreCase(name)) return t; }
                 return SHAPELESS; // Default to shapeless
             }
+        }
+
+        //Advanced data
+        private HashMap<String, Object> advancedData = new HashMap<String, Object>();
+
+        public boolean hasAdvancedData(String key) {
+            return advancedData.containsKey(key);
+        }
+
+        public Object getAdvancedData(String key) {
+            return advancedData.get(key);
+        }
+
+        public void addAdvancedData(String key, Object data) {
+            Bukkit.getLogger().info("Adding advanced data of type: " + key + " to an ItemStack!");
+            advancedData.put(key, data);
         }
     }
 }

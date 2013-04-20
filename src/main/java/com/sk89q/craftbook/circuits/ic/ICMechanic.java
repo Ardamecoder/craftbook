@@ -57,6 +57,21 @@ public class ICMechanic extends PersistentMechanic {
     }
 
     @Override
+    public boolean equals(Object o) {
+
+        if(o instanceof ICMechanic)
+            return ((ICMechanic) o).id.equals(id) && pos.getBlockX() == ((ICMechanic) o).pos.getBlockX() && pos.getBlockY() == ((ICMechanic) o).pos.getBlockY() && pos.getBlockZ() == ((ICMechanic) o).pos.getBlockZ() && ic.getSignTitle().equalsIgnoreCase(((ICMechanic)o).ic.getSignTitle()) && ic.getSignTitle().equalsIgnoreCase(((ICMechanic)o).ic.getSignTitle());
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return (pos.getBlockX() * 1103515245 + 12345 ^ pos.getBlockY() * 1103515245 + 12345 ^ pos.getBlockZ() * 1103515245 + 12345 ^ id.hashCode() * 1103515245 + 12345 ^ ic.getSignTitle().hashCode() * 1103515245 + 12345) * 1103515245 + 12345;
+    }
+
+    @Override
     public void onBlockRedstoneChange(final SourcedBlockRedstoneEvent event) {
 
         BlockWorldVector pt = getTriggerPositions().get(0);
@@ -90,7 +105,7 @@ public class ICMechanic extends PersistentMechanic {
             };
             // FIXME: these should be registered with a global scheduler so we can end up with one runnable actually
             // running per set of inputs in a given time window.
-            CraftBookPlugin.server().getScheduler().scheduleSyncDelayedTask(CraftBookPlugin.inst(), runnable, 2);
+            CraftBookPlugin.server().getScheduler().runTaskLater(CraftBookPlugin.inst(), runnable, 2);
         }
     }
 
@@ -113,14 +128,11 @@ public class ICMechanic extends PersistentMechanic {
         Block block = BukkitUtil.toWorld(pt).getBlockAt(BukkitUtil.toLocation(pt));
 
         if (block.getTypeId() == BlockID.WALL_SIGN) {
-            if (block.getTypeId() == BlockID.WALL_SIGN) {
-                ChangedSign sign = BukkitUtil.toChangedSign(block);
+            ChangedSign sign = BukkitUtil.toChangedSign(block);
 
-                Matcher matcher = RegexUtil.IC_PATTERN.matcher(sign.getLine(1));
+            Matcher matcher = RegexUtil.IC_PATTERN.matcher(sign.getLine(1));
 
-                return matcher.matches() && matcher.group(1).equalsIgnoreCase(id) && ic instanceof PersistentIC && (
-                        (PersistentIC) ic).isActive();
-            }
+            return matcher.matches() && matcher.group(1).equalsIgnoreCase(id) && ic instanceof PersistentIC && ((PersistentIC) ic).isActive();
         }
 
         return false;

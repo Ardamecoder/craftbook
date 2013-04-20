@@ -15,8 +15,8 @@ import org.bukkit.material.PistonBaseMaterial;
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CircuitCore;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
@@ -25,7 +25,7 @@ import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.blocks.BlockID;
 
-public class BlockBreaker extends AbstractIC {
+public class BlockBreaker extends AbstractSelfTriggeredIC {
 
     boolean above;
 
@@ -53,6 +53,12 @@ public class BlockBreaker extends AbstractIC {
         if (chip.getInput(0)) {
             chip.setOutput(0, breakBlock());
         }
+    }
+
+    @Override
+    public void think(ChipState state) {
+
+        state.setOutput(0, breakBlock());
     }
 
     Block broken, chest;
@@ -98,7 +104,6 @@ public class BlockBreaker extends AbstractIC {
 
         if (data > 0 && data != broken.getData()) return false;
 
-        broken.getDrops();
         for (ItemStack blockstack : broken.getDrops()) {
 
             BlockFace back = SignUtil.getBack(BukkitUtil.toSign(getSign()).getBlock());
@@ -111,9 +116,8 @@ public class BlockBreaker extends AbstractIC {
 
                     List<ItemStack> items = new ArrayList<ItemStack>();
                     items.add(blockstack);
-                    if (((CircuitCore) CircuitCore.inst()).getPipeFactory() != null)
-                        if (((CircuitCore) CircuitCore.inst()).getPipeFactory().detect(BukkitUtil.toWorldVector(pipe),
-                                items) != null) {
+                    if (CircuitCore.inst().getPipeFactory() != null)
+                        if (CircuitCore.inst().getPipeFactory().detect(BukkitUtil.toWorldVector(pipe), items) != null) {
                             continue;
                         }
                 }
@@ -168,7 +172,7 @@ public class BlockBreaker extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"Optional block ID", null};
+            String[] lines = new String[] {"Block ID{:Data}", null};
             return lines;
         }
     }

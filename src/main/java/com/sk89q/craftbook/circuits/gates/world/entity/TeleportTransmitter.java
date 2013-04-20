@@ -7,19 +7,18 @@ import org.bukkit.entity.Player;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.util.HistoryHashMap;
 import com.sk89q.craftbook.util.ICUtil;
 import com.sk89q.craftbook.util.LocationUtil;
-import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.Tuple2;
 import com.sk89q.worldedit.Vector;
 
-public class TeleportTransmitter extends AbstractIC {
+public class TeleportTransmitter extends AbstractSelfTriggeredIC {
 
     public TeleportTransmitter(Server server, ChangedSign sign, ICFactory factory) {
 
@@ -50,42 +49,29 @@ public class TeleportTransmitter extends AbstractIC {
     public void load() {
 
         band = getLine(2);
-        offset = BukkitUtil.toSign(getSign()).getLocation();
+        offset = ICUtil.parseBlockLocation(getSign(), 3).getLocation();
         radius = ICUtil.parseRadius(getSign(), 3);
-        try {
-            String[] splitEquals = RegexUtil.EQUALS_PATTERN.split(getSign().getLine(3), 2);
-            if (getSign().getLine(3).contains("=")) {
-                String[] splitCoords = RegexUtil.COLON_PATTERN.split(splitEquals[1]);
-                int x = Integer.parseInt(splitCoords[0]);
-                int y = Integer.parseInt(splitCoords[1]);
-                int z = Integer.parseInt(splitCoords[2]);
-                offset.add(x, y, z);
-            }
-        } catch (Exception e) {
-        }
     }
 
     @Override
     public void trigger(ChipState chip) {
 
-        if (chip.getInput(0)) {
-            Player closest = null;
+        if (chip.getInput(0))
+            sendPlayer();
+    }
 
-            for (Player e : offset.getWorld().getPlayers()) {
-                if (e == null || !e.isValid() || !LocationUtil.isWithinRadius(offset, e.getLocation(), radius)) {
-                    continue;
-                }
+    public void sendPlayer() {
+        Player closest = null;
 
-                if (closest == null) closest = e;
-                else if (closest.getLocation().distanceSquared(BukkitUtil.toSign(getSign()).getLocation()) > e
-                        .getLocation().distanceSquared(
-                                BukkitUtil.toSign(getSign()).getLocation())) closest = e;
-            }
-            if (closest != null && !setValue(band, new Tuple2<Long, String>(System.currentTimeMillis(),
-                    closest.getName())))
-                closest.sendMessage(ChatColor.RED + "This Teleporter Frequency is currently busy! Try again soon!");
-            return;
+        for (Player e : offset.getWorld().getPlayers()) {
+            if (e == null || !e.isValid() || !LocationUtil.isWithinRadius(offset, e.getLocation(), radius))
+                continue;
+
+            if (closest == null) closest = e;
+            else if (closest.getLocation().distanceSquared(BukkitUtil.toSign(getSign()).getLocation()) > e.getLocation().distanceSquared(BukkitUtil.toSign(getSign()).getLocation())) closest = e;
         }
+        if (closest != null && !setValue(band, new Tuple2<Long, String>(System.currentTimeMillis(), closest.getName())))
+            closest.sendMessage(ChatColor.RED + "This Teleporter Frequency is currently busy! Try again soon!");
     }
 
     public static Tuple2<Long, String> getValue(String band) {
@@ -141,5 +127,12 @@ public class TeleportTransmitter extends AbstractIC {
             String[] lines = new String[] {"frequency name", "radius=x:y:z offset"};
             return lines;
         }
+    }
+
+    @Override
+    public void think (ChipState chip) {
+
+        if (chip.getInput(0))
+            sendPlayer();
     }
 }

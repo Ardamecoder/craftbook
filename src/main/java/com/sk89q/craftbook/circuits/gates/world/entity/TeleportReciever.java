@@ -7,15 +7,15 @@ import org.bukkit.entity.Player;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.craftbook.util.Tuple2;
 
-public class TeleportReciever extends AbstractIC {
+public class TeleportReciever extends AbstractSelfTriggeredIC {
 
     public TeleportReciever(Server server, ChangedSign sign, ICFactory factory) {
 
@@ -51,6 +51,12 @@ public class TeleportReciever extends AbstractIC {
         if (chip.getInput(0)) {
             check();
         }
+    }
+
+    @Override
+    public void think(ChipState chip) {
+
+        check();
     }
 
     public void check() {
@@ -90,7 +96,7 @@ public class TeleportReciever extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"frequency name", "welcome text"};
+            String[] lines = new String[] {"frequency name", "+owelcome text"};
             return lines;
         }
     }

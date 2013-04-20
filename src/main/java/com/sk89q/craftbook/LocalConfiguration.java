@@ -1,9 +1,9 @@
 package com.sk89q.craftbook;
 import java.io.File;
 import java.util.List;
-import java.util.Set;
 
 import com.sk89q.craftbook.mech.CustomDropManager;
+import com.sk89q.craftbook.util.ICUtil.LocationCheckType;
 import com.sk89q.craftbook.util.ItemInfo;
 
 /**
@@ -18,7 +18,9 @@ public abstract class LocalConfiguration {
     public boolean ICCached;
     public boolean ICShortHandEnabled;
     public int ICMaxRange;
-    public Set<String> disabledICs;
+    public List<String> disabledICs;
+    public boolean ICKeepLoaded;
+    public LocationCheckType ICdefaultCoordinate;
 
     // Circuits - Wiring
     public boolean netherrackEnabled;
@@ -31,6 +33,7 @@ public abstract class LocalConfiguration {
     public boolean pipesDiagonal;
     public int pipeInsulator;
     public boolean pipeStackPerPull;
+    public boolean pipeRequireSign;
 
     // Mechanics
     // Mechanics - AI
@@ -52,10 +55,15 @@ public abstract class LocalConfiguration {
     public boolean physicsLadders;
     public boolean physicsPots;
     // Mechanics - BetterPistons
+    public int pistonMaxDistance;
     public boolean pistonsEnabled;
     public boolean pistonsCrusher;
+    public boolean pistonsCrusherInstaKill;
+    public List<Integer> pistonsCrusherBlacklist;
     public boolean pistonsSuperSticky;
     public boolean pistonsBounce;
+    public List<Integer> pistonsBounceBlacklist;
+    public boolean pistonsSuperPush;
     // Mechanics - Bookcase
     public boolean bookcaseEnabled;
     public boolean bookcaseReadWhenSneaking;
@@ -85,6 +93,7 @@ public abstract class LocalConfiguration {
     public boolean cookingPotFuel;
     public boolean cookingPotOres;
     public boolean cookingPotSignOpen;
+    public boolean cookingPotDestroyBuckets;
     // Mechanics - Custom Crafting
     public boolean customCraftingEnabled;
     // Mechanics - Custom Dispensing
@@ -109,6 +118,7 @@ public abstract class LocalConfiguration {
     public boolean gateLimitColumns;
     public int gateColumnLimit;
     public List<Integer> gateBlocks;
+    public boolean gateEnforceType;
     // Mechanics - Hidden Switch
     public boolean hiddenSwitchEnabled;
     public boolean hiddenSwitchAnyside;
@@ -128,6 +138,9 @@ public abstract class LocalConfiguration {
     public boolean paintingsEnabled;
     // Mechanics - Payment
     public boolean paymentEnabled;
+    // Mechanics - Lightstone
+    public boolean signCopyEnabled;
+    public int signCopyItem;
     // Mechanics - Snow
     public boolean snowPiling;
     public boolean snowTrample;

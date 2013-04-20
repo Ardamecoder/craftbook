@@ -16,28 +16,25 @@ import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CircuitCore;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.util.ICUtil;
-import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BlockID;
 import com.sk89q.worldedit.blocks.ItemID;
 
-public class CombineHarvester extends AbstractIC {
+public class CombineHarvester extends AbstractSelfTriggeredIC {
 
     public CombineHarvester(Server server, ChangedSign sign, ICFactory factory) {
 
         super(server, sign, factory);
     }
 
-    Vector offset;
     Vector radius;
-
     Block target;
     Block onBlock;
 
@@ -45,29 +42,12 @@ public class CombineHarvester extends AbstractIC {
     public void load() {
 
         onBlock = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
-
-        radius = ICUtil.parseRadius(getSign(), 3);
-
-        try {
-            try {
-                String[] loc = RegexUtil.COLON_PATTERN.split(RegexUtil.EQUALS_PATTERN.split(getSign().getLine(3))[1]);
-                offset = new Vector(Integer.parseInt(loc[0]), Integer.parseInt(loc[1]), Integer.parseInt(loc[2]));
-                if (offset.getX() > 16) offset.setX(16);
-                if (offset.getY() > 16) offset.setY(16);
-                if (offset.getZ() > 16) offset.setZ(16);
-
-                if (offset.getX() < -16) offset.setX(-16);
-                if (offset.getY() < -16) offset.setY(-16);
-                if (offset.getZ() < -16) offset.setZ(-16);
-            } catch (Exception e) {
-                offset = new Vector(0, 2, 0);
-            }
-
-        } catch (Exception e) {
-            offset = new Vector(0, 2, 0);
+        radius = ICUtil.parseRadius(getSign());
+        if (getLine(3).contains("=")) {
+            target = ICUtil.parseBlockLocation(getSign());
+        } else {
+            target = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
         }
-
-        target = onBlock.getRelative(offset.getBlockX(), offset.getBlockY(), offset.getBlockZ());
     }
 
     @Override
@@ -86,6 +66,12 @@ public class CombineHarvester extends AbstractIC {
     public void trigger(ChipState chip) {
 
         if (chip.getInput(0)) chip.setOutput(0, harvest());
+    }
+
+    @Override
+    public void think(ChipState chip) {
+
+        chip.setOutput(0, harvest());
     }
 
     public boolean harvest() {
@@ -188,6 +174,11 @@ public class CombineHarvester extends AbstractIC {
         } else if (b.getTypeId() == BlockID.NETHER_WART) {
 
             drops.add(new ItemStack(ItemID.NETHER_WART_SEED, 2 + CraftBookPlugin.inst().getRandom().nextInt(3)));
+        } else if (b.getTypeId() == BlockID.REED) {
+
+            drops.add(new ItemStack(ItemID.SUGAR_CANE_ITEM, 1));
+        } else {
+            drops.addAll(b.getDrops());
         }
 
         return drops.toArray(new ItemStack[drops.size()]);
@@ -215,7 +206,7 @@ public class CombineHarvester extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"radius=x:y:z offset", null};
+            String[] lines = new String[] {"+oradius=x:y:z offset", null};
             return lines;
         }
     }

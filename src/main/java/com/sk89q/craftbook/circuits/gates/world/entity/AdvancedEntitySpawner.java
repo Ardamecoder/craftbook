@@ -20,6 +20,7 @@ import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.circuits.ic.ICVerificationException;
 import com.sk89q.craftbook.circuits.ic.RestrictedIC;
+import com.sk89q.craftbook.util.ICUtil;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.blocks.BlockID;
@@ -62,20 +63,14 @@ public class AdvancedEntitySpawner extends AbstractIC {
             amount = 1;
         }
 
-        try {
-            double x, y, z;
-            String[] splitLine2 = RegexUtil.COLON_PATTERN.split(getSign().getLine(2));
-            x = Double.parseDouble(splitLine2[0]);
-            y = Double.parseDouble(splitLine2[1]);
-            z = Double.parseDouble(splitLine2[2]);
-            location = BukkitUtil.toSign(getSign()).getLocation().add(x, y, z);
-        } catch (Exception e) {
-            location = BukkitUtil.toSign(getSign()).getLocation();
-        }
+        location = ICUtil.parseBlockLocation(getSign(), 2).getLocation();
     }
 
     @Override
     public void trigger(ChipState chip) {
+
+        if(!location.getChunk().isLoaded())
+            return;
 
         if (!chip.getInput(0)) return;
         Block left = SignUtil.getLeftBlock(BukkitUtil.toSign(getSign()).getBlock());
@@ -236,7 +231,7 @@ public class AdvancedEntitySpawner extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"x:y:z", "entitytype*amount"};
+            String[] lines = new String[] {"+ox:y:z", "entitytype{*amount}"};
             return lines;
         }
 

@@ -10,15 +10,14 @@ import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.util.ICUtil;
 import com.sk89q.craftbook.util.ItemUtil;
 import com.sk89q.craftbook.util.LocationUtil;
-import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BlockID;
@@ -32,48 +31,32 @@ import com.sk89q.worldedit.blocks.ItemID;
  *
  * @authors Drathus, Me4502
  */
-public class Planter extends AbstractIC {
+public class Planter extends AbstractSelfTriggeredIC {
 
     public Planter(Server server, ChangedSign block, ICFactory factory) {
 
         super(server, block, factory);
     }
 
-    ItemStack item;
+    ItemStack item; 
+
     Block target;
     Block onBlock;
-    Vector offset;
     Vector radius;
 
     @Override
     public void load() {
 
         item = ICUtil.getItem(getLine(2));
-        if (item == null) item = new ItemStack(295, 1);
 
         onBlock = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
 
         radius = ICUtil.parseRadius(getSign(), 3);
-        try {
-            try {
-                String[] loc = RegexUtil.COLON_PATTERN.split(RegexUtil.EQUALS_PATTERN.split(getSign().getLine(3))[1]);
-                offset = new Vector(Integer.parseInt(loc[0]), Integer.parseInt(loc[1]), Integer.parseInt(loc[2]));
-                if (offset.getX() > 16) offset.setX(16);
-                if (offset.getY() > 16) offset.setY(16);
-                if (offset.getZ() > 16) offset.setZ(16);
-
-                if (offset.getX() < -16) offset.setX(-16);
-                if (offset.getY() < -16) offset.setY(-16);
-                if (offset.getZ() < -16) offset.setZ(-16);
-            } catch (Exception e) {
-                offset = new Vector(0, 2, 0);
-            }
-
-        } catch (Exception e) {
-            offset = new Vector(0, 2, 0);
+        if (getLine(3).contains("=")) {
+            target = ICUtil.parseBlockLocation(getSign(), 3);
+        } else {
+            target = SignUtil.getBackBlock(BukkitUtil.toSign(getSign()).getBlock());
         }
-
-        target = onBlock.getRelative(offset.getBlockX(), offset.getBlockY(), offset.getBlockZ());
     }
 
     @Override
@@ -94,9 +77,15 @@ public class Planter extends AbstractIC {
         if (chip.getInput(0)) chip.setOutput(0, plant());
     }
 
+    @Override
+    public void think(ChipState state) {
+
+        plant();
+    }
+
     public boolean plant() {
 
-        if (!plantableItem(item.getTypeId())) return false;
+        if (item != null && !plantableItem(item.getTypeId())) return false;
 
         if (onBlock.getRelative(0, 1, 0).getTypeId() == BlockID.CHEST) {
 
@@ -105,15 +94,13 @@ public class Planter extends AbstractIC {
 
                 if (!ItemUtil.isStackValid(it)) continue;
 
-                if (it.getTypeId() != item.getTypeId()) continue;
-
-                if (item.getDurability() != 0 && it.getDurability() != item.getDurability()) continue;
+                if (item != null && !ItemUtil.areItemsIdentical(it, item)) continue;
 
                 Block b = null;
 
                 if ((b = searchBlocks(it)) != null) {
                     if (c.getInventory().removeItem(new ItemStack(it.getTypeId(), 1, it.getDurability())).isEmpty()) {
-                        b.setTypeIdAndData(getBlockByItem(item.getTypeId()), (byte) item.getDurability(), true);
+                        b.setTypeIdAndData(getBlockByItem(it.getTypeId()), (byte) it.getDurability(), true);
                         return true;
                     }
                 }
@@ -126,10 +113,7 @@ public class Planter extends AbstractIC {
 
                 if (!ItemUtil.isStackValid(itemEnt.getItemStack())) continue;
 
-                if (itemEnt.getItemStack().getTypeId() == item.getTypeId()
-                        && (item.getDurability() == 0 || itemEnt.getItemStack().getDurability() == item.getDurability
-                        () || itemEnt.getItemStack()
-                        .getData().getData() == item.getData().getData())) {
+                if (item == null || ItemUtil.areItemsIdentical(item, itemEnt.getItemStack())) {
                     Location loc = itemEnt.getLocation();
 
                     if (LocationUtil.isWithinRadius(target.getLocation(), loc, radius)) {
@@ -138,7 +122,7 @@ public class Planter extends AbstractIC {
 
                         if ((b = searchBlocks(itemEnt.getItemStack())) != null) {
                             if (ItemUtil.takeFromEntity(itemEnt)) {
-                                b.setTypeIdAndData(getBlockByItem(item.getTypeId()), (byte) item.getDurability(), true);
+                                b.setTypeIdAndData(getBlockByItem(itemEnt.getItemStack().getTypeId()), (byte) itemEnt.getItemStack().getDurability(), true);
                                 return true;
                             }
                         }
@@ -162,7 +146,7 @@ public class Planter extends AbstractIC {
 
                     if (b.getTypeId() != 0) continue;
 
-                    if (itemPlantableOnBlock(item.getTypeId(), b.getRelative(0, -1, 0).getTypeId())) {
+                    if (itemPlantableOnBlock(stack.getTypeId(), b.getRelative(0, -1, 0).getTypeId())) {
 
                         return b;
                     }
@@ -187,6 +171,7 @@ public class Planter extends AbstractIC {
             case BlockID.YELLOW_FLOWER:
             case BlockID.RED_MUSHROOM:
             case BlockID.BROWN_MUSHROOM:
+            case BlockID.LILY_PAD:
                 return true;
             default:
                 return false;
@@ -213,6 +198,8 @@ public class Planter extends AbstractIC {
             case BlockID.RED_MUSHROOM:
             case BlockID.BROWN_MUSHROOM:
                 return !BlockType.canPassThrough(blockId);
+            case BlockID.LILY_PAD:
+                return blockId == BlockID.WATER || blockId == BlockID.STATIONARY_WATER;
         }
         return false;
     }
@@ -244,8 +231,10 @@ public class Planter extends AbstractIC {
                 return BlockID.RED_MUSHROOM;
             case BlockID.BROWN_MUSHROOM:
                 return BlockID.BROWN_MUSHROOM;
+            case BlockID.LILY_PAD:
+                return BlockID.LILY_PAD;
             default:
-                return BlockID.AIR;
+                return itemId;
         }
     }
 
@@ -271,7 +260,7 @@ public class Planter extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"Item to plant id:data", "radius=x:y:z offset"};
+            String[] lines = new String[] {"+oItem to plant id{:data}", "+oradius=x:y:z offset"};
             return lines;
         }
     }

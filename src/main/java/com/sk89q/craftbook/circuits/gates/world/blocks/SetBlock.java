@@ -8,7 +8,7 @@ import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.util.RegexUtil;
@@ -16,7 +16,7 @@ import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.blocks.BlockID;
 import com.sk89q.worldedit.blocks.BlockType;
 
-public abstract class SetBlock extends AbstractIC {
+public abstract class SetBlock extends AbstractSelfTriggeredIC {
 
     public SetBlock(Server server, ChangedSign sign, ICFactory factory) {
 
@@ -71,6 +71,12 @@ public abstract class SetBlock extends AbstractIC {
     public void trigger(ChipState chip) {
 
         chip.setOutput(0, chip.getInput(0));
+
+        onTrigger();
+    }
+
+    @Override
+    public void think(ChipState chip) {
 
         onTrigger();
     }

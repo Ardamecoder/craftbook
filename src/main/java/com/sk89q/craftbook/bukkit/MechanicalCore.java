@@ -13,6 +13,7 @@ import com.sk89q.craftbook.mech.AIMechanic;
 import com.sk89q.craftbook.mech.Ammeter;
 import com.sk89q.craftbook.mech.BetterPhysics;
 import com.sk89q.craftbook.mech.BetterPistons;
+import com.sk89q.craftbook.mech.BetterPistons.Types;
 import com.sk89q.craftbook.mech.Bookcase;
 import com.sk89q.craftbook.mech.Bridge;
 import com.sk89q.craftbook.mech.Cauldron;
@@ -30,6 +31,7 @@ import com.sk89q.craftbook.mech.LightSwitch;
 import com.sk89q.craftbook.mech.MapChanger;
 import com.sk89q.craftbook.mech.PaintingSwitch;
 import com.sk89q.craftbook.mech.Payment;
+import com.sk89q.craftbook.mech.SignCopier;
 import com.sk89q.craftbook.mech.Snow;
 import com.sk89q.craftbook.mech.Teleporter;
 import com.sk89q.craftbook.mech.XPStorer;
@@ -82,6 +84,7 @@ public class MechanicalCore implements LocalComponent {
     @Override
     public void disable() {
 
+        unregisterAllMechanics();
         // Nothing to do at the current time
     }
 
@@ -95,6 +98,11 @@ public class MechanicalCore implements LocalComponent {
         BukkitConfiguration config = plugin.getConfiguration();
 
         // Let's register mechanics!
+
+        //Register Chunk Anchors first so that they are always the first mechanics to be checked for, allowing other mechanics to stay loaded in unloaded chunks.
+        if (config.chunkAnchorEnabled) registerMechanic(new ChunkAnchor.Factory());
+
+        if (config.signCopyEnabled) registerMechanic(new SignCopier.Factory()); // Keep SignCopy close to the start, so it can copy mechanics without triggering them.
         if (config.ammeterEnabled) registerMechanic(new Ammeter.Factory());
         if (config.bookcaseEnabled) {
             plugin.createDefaultConfiguration(new File(plugin.getDataFolder(), "books.txt"), "books.txt", false);
@@ -107,7 +115,6 @@ public class MechanicalCore implements LocalComponent {
         if (config.teleporterEnabled) registerMechanic(new Teleporter.Factory());
         if (config.areaEnabled) registerMechanic(new Area.Factory());
         if (config.commandSignEnabled) registerMechanic(new Command.Factory());
-        if (config.chunkAnchorEnabled) registerMechanic(new ChunkAnchor.Factory());
         if (config.lightstoneEnabled) registerMechanic(new LightStone.Factory());
         if (config.lightSwitchEnabled) registerMechanic(new LightSwitch.Factory());
         if (config.hiddenSwitchEnabled) registerMechanic(new HiddenSwitch.Factory());
@@ -116,9 +123,8 @@ public class MechanicalCore implements LocalComponent {
         if (config.cauldronEnabled) registerMechanic(new ImprovedCauldron.Factory());
         if (config.xpStorerEnabled) registerMechanic(new XPStorer.Factory());
         if (config.mapChangerEnabled) registerMechanic(new MapChanger.Factory());
-        if (config.pistonsEnabled) registerMechanic(new BetterPistons.Factory());
-
-        if (config.customCraftingEnabled) new CustomCrafting();
+        for(Types type : BetterPistons.Types.values())
+            if (config.pistonsEnabled && Types.isEnabled(type)) registerMechanic(new BetterPistons.Factory(type));
 
         // Special mechanics.
         if (plugin.getEconomy() != null && config.paymentEnabled) {
@@ -131,6 +137,9 @@ public class MechanicalCore implements LocalComponent {
         Server server = plugin.getServer();
         BukkitConfiguration config = plugin.getConfiguration();
 
+        if (config.customCraftingEnabled) {
+            server.getPluginManager().registerEvents(new CustomCrafting(), plugin);
+        }
         if (config.customDispensingEnabled) {
             server.getPluginManager().registerEvents(new DispenserRecipes(), plugin);
         }
@@ -178,23 +187,22 @@ public class MechanicalCore implements LocalComponent {
      *
      * @return true if the mechanic was successfully unregistered.
      */
+    @SuppressWarnings("unused")
     private boolean unregisterMechanic(MechanicFactory<? extends Mechanic> factory) {
 
         return manager.unregister(factory);
     }
 
-    @SuppressWarnings("unused")
     private boolean unregisterAllMechanics() {
-
-        boolean ret = true;
 
         Iterator<MechanicFactory<? extends Mechanic>> iterator = manager.factories.iterator();
 
         while (iterator.hasNext()) {
-            if (!unregisterMechanic(iterator.next())) ret = false;
+            iterator.next();
+            manager.unregister(iterator);
         }
 
-        return ret;
+        return true;
     }
 
     /**

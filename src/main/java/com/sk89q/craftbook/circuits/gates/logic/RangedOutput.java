@@ -3,18 +3,17 @@ package com.sk89q.craftbook.circuits.gates.logic;
 import org.bukkit.Server;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
-import com.sk89q.craftbook.circuits.ic.SelfTriggeredIC;
 import com.sk89q.craftbook.util.RegexUtil;
 
 /**
  * @author Me4502
  */
-public class RangedOutput extends AbstractIC implements SelfTriggeredIC {
+public class RangedOutput extends AbstractSelfTriggeredIC {
 
     int ticks = 0;
     int maxTicks = 0;
@@ -37,6 +36,12 @@ public class RangedOutput extends AbstractIC implements SelfTriggeredIC {
     public String getSignTitle() {
 
         return "RANGE OUTPUT";
+    }
+
+    @Override
+    public boolean isAlwaysST() {
+
+        return true;
     }
 
     @Override
@@ -77,12 +82,6 @@ public class RangedOutput extends AbstractIC implements SelfTriggeredIC {
             return false;
         }
         return false;
-    }
-
-    @Override
-    public boolean isActive() {
-
-        return true;
     }
 
     @Override

@@ -1,8 +1,10 @@
 package com.sk89q.craftbook.mech;
 
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -27,6 +29,9 @@ public class CustomDrops implements Listener {
         if (plugin.getConfiguration().customDropPermissions
                 && !plugin.wrapPlayer(event.getPlayer()).hasPermission("craftbook.mech.drops")) return;
 
+        if(event.getPlayer().getGameMode() == GameMode.CREATIVE) //Don't drop in creative.
+            return;
+
         int id = event.getBlock().getTypeId();
         byte data = event.getBlock().getData();
 
@@ -48,6 +53,7 @@ public class CustomDrops implements Listener {
                 if (!drops[0].append) {
                     event.getBlock().setTypeId(0);
                     event.setCancelled(true);
+                    ((ExperienceOrb) event.getBlock().getWorld().spawnEntity(l, EntityType.EXPERIENCE_ORB)).setExperience(event.getExpToDrop());
                 }
             }
         }
@@ -61,7 +67,10 @@ public class CustomDrops implements Listener {
         CustomDropManager.DropDefinition[] drops = plugin.getConfiguration().customDrops.getMobDrop(entityType
                 .getName());
         if (drops != null) {
-            if (!drops[0].append) event.getDrops().clear();
+            if (!drops[0].append) {
+                event.getDrops().clear();
+                ((ExperienceOrb) event.getEntity().getWorld().spawnEntity(event.getEntity().getLocation(), EntityType.EXPERIENCE_ORB)).setExperience(event.getDroppedExp());
+            }
             // Add the custom drops
             for (CustomDropManager.DropDefinition dropDefinition : drops) {
                 ItemStack stack = dropDefinition.getItemStack();

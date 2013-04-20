@@ -19,8 +19,6 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
 
-import org.bukkit.Sound;
-
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
 
 /**
@@ -101,6 +99,8 @@ public class MidiJingleSequencer implements JingleSequencer {
         final Map<Integer, Integer> patches = new HashMap<Integer, Integer>();
 
         try {
+            if(sequencer.getSequence() == null)
+                return;
             if (!sequencer.isOpen()) {
                 sequencer.open();
             }
@@ -136,7 +136,12 @@ public class MidiJingleSequencer implements JingleSequencer {
                 }
             });
 
-            sequencer.start();
+            try {
+                if (sequencer.isOpen()) {
+                    sequencer.start();
+                }
+            }
+            catch(Exception e){}
 
             while (sequencer.isRunning()) {
                 Thread.sleep(1000);
@@ -178,25 +183,23 @@ public class MidiJingleSequencer implements JingleSequencer {
         return (byte) instruments[patch];
     }
 
-    protected Sound toMCSound(byte instrument) {
+    protected Instrument toMCSound(byte instrument) {
 
         switch (instrument) {
-            case 0:
-                return Sound.NOTE_PIANO;
             case 1:
-                return Sound.NOTE_BASS_GUITAR;
+                return Instrument.BASS_GUITAR;
             case 2:
-                return Sound.NOTE_SNARE_DRUM;
+                return Instrument.SNARE_DRUM;
             case 3:
-                return Sound.NOTE_STICKS;
+                return Instrument.STICKS;
             case 4:
-                return Sound.NOTE_BASS_DRUM;
+                return Instrument.BASS_DRUM;
             case 5:
-                return Sound.NOTE_PLING;
+                return Instrument.GUITAR;
             case 6:
-                return Sound.NOTE_BASS;
+                return Instrument.BASS;
             default:
-                return Sound.NOTE_PIANO;
+                return Instrument.PIANO;
         }
     }
 

@@ -87,6 +87,10 @@ public class BlockLauncher extends AbstractIC {
             }
         }
         double y = above.getY() - 0.99D;
+
+        if(!new Location(BukkitUtil.toSign(getSign()).getWorld(), above.getX() + 0.5D, y, above.getZ() + 0.5D).getChunk().isLoaded())
+            return;
+
         FallingBlock block = BukkitUtil.toSign(getSign()).getWorld()
                 .spawnFallingBlock(new Location(BukkitUtil.toSign(getSign()).getWorld(), above.getX() + 0.5D, y,
                         above.getZ() + 0.5D), id, data);
@@ -115,7 +119,7 @@ public class BlockLauncher extends AbstractIC {
         @Override
         public String[] getLineHelp() {
 
-            String[] lines = new String[] {"id:data", "velocity x:y:z"};
+            String[] lines = new String[] {"id{:data}", "+ovelocity x:y:z"};
             return lines;
         }
     }

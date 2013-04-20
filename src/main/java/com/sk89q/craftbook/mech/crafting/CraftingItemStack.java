@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
@@ -42,6 +43,26 @@ public class CraftingItemStack implements Comparable<CraftingItemStack> {
     private Material material;
     private short data;
     private int amount;
+
+    //Advanced data
+    private HashMap<String, Object> advancedData = new HashMap<String, Object>();
+
+    public boolean hasAdvancedData() {
+        return !advancedData.isEmpty();
+    }
+
+    public boolean hasAdvancedData(String key) {
+        return advancedData.containsKey(key);
+    }
+
+    public Object getAdvancedData(String key) {
+        return advancedData.get(key);
+    }
+
+    public void addAdvancedData(String key, Object data) {
+        Bukkit.getLogger().info("Adding advanced data of type: " + key + " to an ItemStack!");
+        advancedData.put(key, data);
+    }
 
     public CraftingItemStack(Material material, short data, int amount) {
 

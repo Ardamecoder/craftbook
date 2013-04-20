@@ -7,7 +7,7 @@
  * Software Foundation, either version 3 of the License, or (at your option) any later version.
  * 
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-  * warranty of MERCHANTABILITY or
+ * warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License along with this program. If not,
@@ -19,19 +19,25 @@ package com.sk89q.craftbook.circuits.gates.logic;
 import org.bukkit.Server;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
 import com.sk89q.craftbook.circuits.ic.ICVerificationException;
-import com.sk89q.craftbook.circuits.ic.SelfTriggeredIC;
+import com.sk89q.util.yaml.YAMLProcessor;
 
-public class Clock extends AbstractIC implements SelfTriggeredIC {
+public class Clock extends AbstractSelfTriggeredIC {
 
     public Clock(Server server, ChangedSign psign, ICFactory factory) {
 
         super(server, psign, factory);
+    }
+
+    @Override
+    public boolean isAlwaysST() {
+
+        return true;
     }
 
     @Override
@@ -49,6 +55,14 @@ public class Clock extends AbstractIC implements SelfTriggeredIC {
     @Override
     public void trigger(ChipState chip) {
 
+    }
+
+    @Override
+    public void think(ChipState chip) {
+
+        if (((Factory)getFactory()).inverted ? chip.getInput(0) : !chip.getInput(0)) {
+            triggerClock(chip);
+        }
     }
 
     short tick, reset;
@@ -83,6 +97,8 @@ public class Clock extends AbstractIC implements SelfTriggeredIC {
 
     public static class Factory extends AbstractICFactory {
 
+        public boolean inverted = false;
+
         public Factory(Server server) {
 
             super(server);
@@ -108,7 +124,18 @@ public class Clock extends AbstractIC implements SelfTriggeredIC {
             interval = Math.min(interval, 150);
 
             sign.setLine(2, Integer.toString(interval));
-            sign.setLine(3, "0");
+
+            int tick;
+            try {
+                tick = Integer.parseInt(sign.getLine(3));
+            } catch (NumberFormatException e) {
+                tick = 0;
+            }
+
+            tick = Math.max(tick, 0);
+            tick = Math.min(tick, interval);
+
+            sign.setLine(3, Integer.toString(tick));
             sign.update(false);
         }
 
@@ -124,19 +151,17 @@ public class Clock extends AbstractIC implements SelfTriggeredIC {
             String[] lines = new String[] {"ticks required", "current ticks"};
             return lines;
         }
-    }
 
-    @Override
-    public boolean isActive() {
+        @Override
+        public void addConfiguration(YAMLProcessor config, String path) {
 
-        return true;
-    }
+            inverted = config.getBoolean(path + "inverted", false);
+        }
 
-    @Override
-    public void think(ChipState chip) {
+        @Override
+        public boolean needsConfiguration() {
 
-        if (chip.getInput(0)) {
-            triggerClock(chip);
+            return true;
         }
     }
 }

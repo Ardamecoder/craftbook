@@ -24,11 +24,16 @@ public class BukkitConfiguration extends YAMLConfiguration {
     public int stThinkRate;
     public boolean obeyWorldguard;
     public boolean advancedBlockChecks;
+    public boolean experimentalClicks;
 
     public boolean updateNotifier;
+    public boolean easterEggs;
 
     public String language;
     public List<String> languages;
+
+    public boolean debugMode;
+    public List<String> debugFlags;
 
     private final CraftBookPlugin plugin;
 
@@ -48,6 +53,8 @@ public class BukkitConfiguration extends YAMLConfiguration {
             BukkitUtil.printStacktrace(e);
         }
 
+        config.setWriteDefaults(true);
+
         config.setHeader(
                 "# CraftBook Configuration for Bukkit. Generated for version: " + CraftBookPlugin.inst().getDescription().getVersion(),
                 "# This configuration will automatically add new configuration options for you,",
@@ -65,7 +72,6 @@ public class BukkitConfiguration extends YAMLConfiguration {
 
         config.setComment("enable-vehicles", "If this is set to false, all vehicles mechanics will be disabled, and vehicle configuration will not do anything.");
         enableVehicles = config.getBoolean("enable-vehicles", true);
-
 
         config.setComment("st-think-ticks", "WARNING! Changing this can result in all ST mechanics acting very weirdly, only change this if you know what you are doing!");
         stThinkRate = config.getInt("st-think-ticks", 2);
@@ -86,16 +92,28 @@ public class BukkitConfiguration extends YAMLConfiguration {
         useBlockDistance = config.getBoolean("use-block-distance", false);
 
         config.setComment("check-worldguard-flags", "Checks to see if WorldGuard allows building/using in the area when activating mechanics.");
-        obeyWorldguard = config.getBoolean("check-worldguard-flags", true);
+        obeyWorldguard = config.getBoolean("check-worldguard-flags", false);
 
         config.setComment("advanced-block-checks", "Use advanced methods to detect if a player can build or not. Use this if you use region protections other than WorldGuard, or experience issues with WorldGuard protection.");
         advancedBlockChecks = config.getBoolean("advanced-block-checks", false);
 
-        config.setComment("language", "The default language for CraftBook.");
+        config.setComment("use-experimental-clicks", "Use experimental methods for right clicking a block to always work even if the client doesn't tell the server the block was right clicked. This may assume the wrong block, so be warned.");
+        experimentalClicks = config.getBoolean("use-experimental-clicks", false);
+
+        config.setComment("language", "The default language for CraftBook. Note: This language needs to be in the 'languages' field for this to work.");
         language = config.getString("language", "en_US");
 
         config.setComment("languages", "A list of languages supported by craftbook, if a user requests a language not listed... They will see default.");
         languages = config.getStringList("languages", Arrays.asList("en_US"));
+
+        config.setComment("debug-mode", "Enable a mode that will print extra debug information to the console.");
+        debugMode = config.getBoolean("debug-mode", false);
+
+        config.setComment("debug-flags", "Enable certain debug types when debug mode is enabled.");
+        debugFlags = config.getStringList("debug-flags", null);
+
+        config.setComment("easter-eggs", "Enables random easter eggs. Can be from console messages on startup for a special occasion, to funny little effects with IC's and other mechanics (Always harmless, won't mess anything up)");
+        easterEggs = config.getBoolean("easter-eggs", true);
 
         super.load();
     }

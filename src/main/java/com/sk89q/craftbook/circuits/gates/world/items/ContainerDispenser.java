@@ -13,8 +13,8 @@ import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.circuits.ic.AbstractIC;
 import com.sk89q.craftbook.circuits.ic.AbstractICFactory;
+import com.sk89q.craftbook.circuits.ic.AbstractSelfTriggeredIC;
 import com.sk89q.craftbook.circuits.ic.ChipState;
 import com.sk89q.craftbook.circuits.ic.IC;
 import com.sk89q.craftbook.circuits.ic.ICFactory;
@@ -26,7 +26,7 @@ import com.sk89q.worldedit.blocks.BlockID;
 /**
  * @author Me4502
  */
-public class ContainerDispenser extends AbstractIC {
+public class ContainerDispenser extends AbstractSelfTriggeredIC {
 
     public ContainerDispenser(Server server, ChangedSign sign, ICFactory factory) {
 
@@ -34,11 +34,10 @@ public class ContainerDispenser extends AbstractIC {
     }
 
     ItemStack item;
+    int amount;
 
     @Override
     public void load() {
-
-        int amount;
 
         try {
             amount = Integer.parseInt(getSign().getLine(2));
@@ -69,6 +68,12 @@ public class ContainerDispenser extends AbstractIC {
         if (chip.getInput(0)) {
             chip.setOutput(0, dispense());
         }
+    }
+
+    @Override
+    public void think(ChipState chip) {
+
+        chip.setOutput(0, dispense());
     }
 
     /**
@@ -134,7 +139,7 @@ public class ContainerDispenser extends AbstractIC {
     public boolean dispenseItem(Inventory inv, ItemStack old) {
 
         ItemStack item = old.clone();
-        item.setAmount(this.item.getAmount());
+        item.setAmount(amount);
         if (inv == null) return false;
         HashMap<Integer, ItemStack> over = inv.removeItem(item.clone());
         if (over.isEmpty()) {

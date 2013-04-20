@@ -38,9 +38,6 @@ import com.sk89q.worldedit.blocks.ItemType;
  */
 public class ICUtil {
 
-    // private static BlockFace[] REDSTONE_CONTACT_FACES =
-    // {BlockFace.DOWN, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.UP};
-
     public ICUtil() {
 
     }
@@ -81,9 +78,16 @@ public class ICUtil {
             // set the new data
             block.setData((byte) newData, true);
             // apply physics to the source block the lever is attached to
-            block.setData(block.getData(), true);
-            BlockRedstoneEvent event = new BlockRedstoneEvent(block,wasOn ? 15 : 0, state ? 15 : 0);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
+            byte sData = source.getData();
+            source.setData((byte) (sData - 1), true);
+            source.setData(sData, true);
+
+            // lets call blockredstone events on the source block and the lever
+            // in order to correctly update all surrounding blocks
+            BlockRedstoneEvent leverEvent = new BlockRedstoneEvent(block, wasOn ? 15 : 0, state ? 15 : 0);
+            BlockRedstoneEvent sourceEvent = new BlockRedstoneEvent(source, wasOn ? 15 : 0, state ? 15 : 0);
+            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(leverEvent);
+            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(sourceEvent);
             return true;
         }
 
@@ -126,6 +130,10 @@ public class ICUtil {
         } catch (ArrayIndexOutOfBoundsException e) {
             // do nothing and use defaults
         }
+
+        if(offsetX == 0 && offsetY == 0 && offsetZ == 0)
+            return target;
+
         if (relative == LocationCheckType.RELATIVE) {
             target = LocationUtil.getRelativeOffset(sign, offsetX, offsetY, offsetZ);
         } else if (relative == LocationCheckType.OFFSET){
@@ -138,12 +146,12 @@ public class ICUtil {
 
     public static Block parseBlockLocation(ChangedSign sign, int lPos) {
 
-        return parseBlockLocation(sign, lPos, LocationCheckType.RELATIVE);
+        return parseBlockLocation(sign, lPos, CraftBookPlugin.inst().getConfiguration().ICdefaultCoordinate);
     }
 
     public static Block parseBlockLocation(ChangedSign sign) {
 
-        return parseBlockLocation(sign, 2, LocationCheckType.RELATIVE);
+        return parseBlockLocation(sign, 2, CraftBookPlugin.inst().getConfiguration().ICdefaultCoordinate);
     }
 
     public static void verifySignSyntax(ChangedSign sign) throws ICVerificationException {
@@ -189,7 +197,11 @@ public class ICUtil {
 
     public static Vector parseRadius(ChangedSign sign, int lPos) {
 
-        String line = sign.getLine(lPos);
+        return parseRadius(sign.getLine(lPos));
+    }
+
+    public static Vector parseRadius(String line) {
+
         Vector radius = new Vector(10,10,10); // default radius is 10.
         try {
             String[] radians = RegexUtil.COMMA_PATTERN.split(RegexUtil.EQUALS_PATTERN.split(line, 2)[0]);
@@ -268,6 +280,17 @@ public class ICUtil {
 
             for(LocationCheckType t : values())
                 if(t.c == c)
+                    return t;
+
+            return RELATIVE;
+        }
+
+        public static LocationCheckType getTypeFromName(String name) {
+
+            if(name.length() == 1)
+                return getTypeFromChar(name.charAt(0));
+            for(LocationCheckType t : values())
+                if(t.name().equalsIgnoreCase(name))
                     return t;
 
             return RELATIVE;
